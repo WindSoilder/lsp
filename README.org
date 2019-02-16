@@ -3,3 +3,9 @@ Language Server Protocol implementation.  Which is highly inspired by
 
 So the actual language server can build on this, it can be integreted with
 trio, asyncio, or some server else.
+
+WARNING: It's under development and not complete for now.
+
+
+* Required python version
+Python >= 3.6
