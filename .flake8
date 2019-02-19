@@ -1,0 +1,4 @@
+[flake8]
+# ignore flake8 checking for __init__.py, because in normally
+# we just want to import something to export them out.
+exclude = *__init__.py*
