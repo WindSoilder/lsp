@@ -64,3 +64,6 @@ coverage.xml
 
 # Sphinx documentation
 doc/_build/
+
+# vscode personal config file
+.vscode/*
