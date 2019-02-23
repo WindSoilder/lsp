@@ -19,6 +19,12 @@ class DataReceived(EventBase):
     pass
 
 
+class DataSent(EventBase):
+    """ The DataSent events are fired when we send request/response data. """
+
+    pass
+
+
 class ResponseReceived(EventBase):
     """ The ResponseReceived events are fired when we get response header. """
 
@@ -26,18 +32,18 @@ class ResponseReceived(EventBase):
 
 
 class _HeaderSent(EventBase):
-    """ INTERNAL EVENT, which is fired when header is sent. """
+    """ Fired when header is sent. """
 
     pass
 
 
-class _RequestSent(_HeaderSent):
-    """ INTERNAL EVENT, fired when request header is sent. """
+class RequestSent(_HeaderSent):
+    """ Fired when request header is sent. """
 
     pass
 
 
-class _ResponseSent(_HeaderSent):
-    """ INTERNAL EVENT, fired when response header is sent. """
+class ResponseSent(_HeaderSent):
+    """ Fired when response header is sent. """
 
     pass
