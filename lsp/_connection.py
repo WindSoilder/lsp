@@ -1,35 +1,29 @@
-from typing import Iterable
-from ._events import _EventBase
+from ._events import EventBase
 
 
 class Connection:
     """ Language server protocol Connection object. """
 
-    def __init__(self):
+    def __init__(self):  # type: ignore
         pass
 
-    def send_data(self, data: bytes) -> None:
-        """ send data and update the connection state.
+    def send(self, event: EventBase) -> bytes:
+        """ send event and returns the relative bytes.  So what this function
+        do is convert from event object to actual bytes, then user don't need
+        to worry about bytes send to server.
 
         Args:
-            data (bytes): data we need to send
+            event (EventBase): event we need to send.
+        Returns:
+            Bytes we can send to user.
         """
         pass
 
-    def receive_data(self, data: bytes) -> Iterable[_EventBase]:
-        """ receive data and convert them to a list of event.
-
-        Args:
-            data (bytes): data we are received.
-        Returns:
-            An iterable of lsp event object.
-        """
-        pass
-
-    def data_to_send(self) -> bytes:
-        """ Returns data when we can send to the other side.
+    def next_event(self) -> EventBase:
+        """ get and return next events.  User can do something according
+        to what it get.
 
         Returns:
-            data in bytes.
+            An EventBase object
         """
         pass

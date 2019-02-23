@@ -1,31 +1,31 @@
 """ Contains events definition which is exposed by lsp. """
 
 
-class _EventBase:
+class EventBase:
     """ Very very base definition for lsp events. """
 
     pass
 
 
-class RequestReceived(_EventBase):
+class RequestReceived(EventBase):
     """ The RequestReceived events are fired when we get request header. """
 
     pass
 
 
-class DataReceived(_EventBase):
+class DataReceived(EventBase):
     """ The DataReceived events are fired when we get request data. """
 
     pass
 
 
-class ResponseReceived(_EventBase):
+class ResponseReceived(EventBase):
     """ The ResponseReceived events are fired when we get response header. """
 
     pass
 
 
-class _HeaderSent(_EventBase):
+class _HeaderSent(EventBase):
     """ INTERNAL EVENT, which is fired when header is sent. """
 
     pass
