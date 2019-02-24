@@ -47,3 +47,15 @@ class ResponseSent(_HeaderSent):
     """ Fired when response header is sent. """
 
     pass
+
+
+class Close(EventBase):
+    """ Fired when we need to close connection. """
+
+    pass
+
+
+class MessageEnd(EventBase):
+    """ Fired when we send data complete. """
+
+    pass
