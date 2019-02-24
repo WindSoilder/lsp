@@ -58,10 +58,10 @@ def next_state(role: Role, current_state: Type, event: EventBase) -> Type:
     """
     state_machine = _client_state if role == Role.CLIENT else _server_state
     if current_state not in state_machine:
-        raise ValueError(f"The given state {repr(current_state)} is invalid.")
+        raise RuntimeError(f"The given state {repr(current_state)} is invalid.")
     next_state = state_machine[current_state].get(event, None)
     if not next_state:
-        raise ValueError(f"The event is invalid.")
+        raise RuntimeError(f"The event is invalid.")
     return next_state
 
 

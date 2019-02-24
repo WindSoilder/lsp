@@ -24,10 +24,10 @@ def test_next_state():
 
 
 def test_next_state_when_current_state_is_invalid():
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         next_state(Role.CLIENT, SEND_RESPONSE, RequestSent)
 
 
 def test_next_state_when_event_is_invalid():
-    with pytest.raises(ValueError):
+    with pytest.raises(RuntimeError):
         next_state(Role.CLIENT, SEND_BODY, RequestSent)
