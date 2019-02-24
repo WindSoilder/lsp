@@ -21,6 +21,7 @@ class EventBaseMeta(type):
     When a class using this metaclass, the '_required' fields will be
     auto-generated.  And it required class should have '_fields' attribute.
     """
+
     def __new__(cls, cls_name: str, bases: Tuple, attrs: Dict) -> type:
         if bases is None:
             assert (
