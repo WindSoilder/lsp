@@ -15,7 +15,7 @@ from typing import Set, List, Tuple, Dict, Any
 # For more information, please see two useful links:
 # https://stackoverflow.com/questions/100003/what-are-metaclasses-in-python
 # https://docs.python.org/3/reference/datamodel.html#metaclasses
-class EventBaseMeta(type):
+class _EventBaseMeta(type):
     """ MetaClass for lsp events.
 
     When a class using this metaclass, the '_required' fields will be
@@ -27,7 +27,7 @@ class EventBaseMeta(type):
             assert (
                 "_fields" in attrs
             ), "The new creating class must contains '_fields' attribute"
-        return super(EventBaseMeta, cls).__new__(cls, cls_name, bases, attrs)
+        return super(_EventBaseMeta, cls).__new__(cls, cls_name, bases, attrs)
 
     def __init__(cls, cls_name, bases, attrs):  # type: ignore
         if not hasattr(cls, "_defaults"):
@@ -45,7 +45,7 @@ class EventBaseMeta(type):
         cls._required = cls._fields - optional_fields
 
 
-class EventBase(metaclass=EventBaseMeta):
+class EventBase(metaclass=_EventBaseMeta):
     """ Very very base definition for lsp events.
 
     Attributes:
