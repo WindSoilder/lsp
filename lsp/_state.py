@@ -9,6 +9,7 @@ from ._events import (
     ResponseSent,
     EventBase,
 )
+from ._errors import LspProtocolError
 
 __all__ = [
     "make_state",
@@ -53,15 +54,15 @@ def next_state(role: Role, current_state: Type, event: EventBase) -> Type:
     Returns:
         An instance of type indicate the next state.
     Raises:
-        ValueError - if the current_state is not a valid state of role.
+        LspProtocolError - if the current_state is not a valid state of role.
             Or we can't find next state
     """
     state_machine = _client_state if role == Role.CLIENT else _server_state
     if current_state not in state_machine:
-        raise RuntimeError(f"The given state {repr(current_state)} is invalid.")
+        raise LspProtocolError(f"The given state {repr(current_state)} is invalid.")
     next_state = state_machine[current_state].get(event, None)
     if not next_state:
-        raise RuntimeError(f"The event is invalid.")
+        raise LspProtocolError(f"The event is invalid.")
     return next_state
 
 

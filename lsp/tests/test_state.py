@@ -3,6 +3,7 @@ import pytest
 from .._state import make_state, next_state, IDLE, SEND_BODY, SEND_RESPONSE
 from .._role import Role
 from .._events import RequestSent, RequestReceived
+from .._errors import LspProtocolError
 
 
 def test_make_state_and_expect_is_an_instance_of_class():
@@ -24,10 +25,10 @@ def test_next_state():
 
 
 def test_next_state_when_current_state_is_invalid():
-    with pytest.raises(RuntimeError):
+    with pytest.raises(LspProtocolError):
         next_state(Role.CLIENT, SEND_RESPONSE, RequestSent)
 
 
 def test_next_state_when_event_is_invalid():
-    with pytest.raises(RuntimeError):
+    with pytest.raises(LspProtocolError):
         next_state(Role.CLIENT, SEND_BODY, RequestSent)
