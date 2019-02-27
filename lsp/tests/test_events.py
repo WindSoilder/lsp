@@ -103,3 +103,13 @@ def test_event_object_initialization_defaults_fields():
     assert getattr(event, "content-length") == 10
     assert getattr(event, "content-type") == "json"
     assert getattr(event, "using-chunk") is False
+
+
+def test_access_event_fields():
+    class Event1(EventBase):
+        _fields = {"content-length", "content-type"}
+        _defaults = [("content-length", 10), ("content-type", "json")]
+
+    event = Event1({})
+    assert event["content-length"] == 10
+    assert event["content-type"] == "json"

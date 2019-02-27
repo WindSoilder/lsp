@@ -83,6 +83,9 @@ class EventBase(metaclass=_EventBaseMeta):
         self.__dict__.update(self._defaults)
         self.__dict__.update(kwargs)
 
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
 
 class DataReceived(EventBase):
     """ The DataReceived events are fired when we get request data. """
