@@ -1,6 +1,6 @@
 class FixedLengthBuffer:
     def __init__(self):  # type: ignore
-        self.length: int = 0
+        self.remain: int = 0
         self.data = bytearray()
         self.length_set = False
 
@@ -12,10 +12,10 @@ class FixedLengthBuffer:
         Raises:
             RuntimeError - When the length of data is more than the buffer capacity.
         """
-        checked_length = self.length - len(data)
+        checked_length = self.remain - len(data)
         if checked_length < 0:
             raise RuntimeError("Too much data to insert into buffer.")
-        self.length -= len(data)
+        self.remain -= len(data)
         self.data.extend(data)
 
     def set_length(self, length: int) -> None:
@@ -33,14 +33,14 @@ class FixedLengthBuffer:
                 "You have already call set_length.  This can't be called twice"
                 "If you wan't to reset length, please call `clear()` first"
             )
-        self.length = length
+        self.remain = length
         self.length_set = True
 
     def clear(self) -> None:
         """ clear the buffer. """
         self.length_set = False
         self.data.clear()
-        self.length = 0
+        self.remain = 0
 
     def __len__(self) -> int:
         """ return the length of buffer in bytes. """

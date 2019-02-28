@@ -56,7 +56,7 @@ class Connection:
         data = event.to_data()
         if isinstance(event, _HeaderEvent):
             self.out_buffer.set_length(event["Content-Length"])
-        elif isinstance(event, MessageEnd) and self.out_buffer.length > 0:
+        elif isinstance(event, MessageEnd) and self.out_buffer.remain > 0:
             raise LspProtocolError(
                 f"Send Message end too quickly.  Expect {len(self.out_buffer)} bytes."
             )
