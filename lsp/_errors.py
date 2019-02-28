@@ -5,4 +5,5 @@ class LspProtocolError(BaseException):
     2. send MessageEnd event, but the length of sending buffer doesn't match
     the content of length which defined in the header.
     """
+
     pass
