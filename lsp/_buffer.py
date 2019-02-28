@@ -41,3 +41,7 @@ class FixedLengthBuffer:
         self.length_set = False
         self.data.clear()
         self.length = 0
+
+    def __len__(self) -> int:
+        """ return the length of buffer in bytes. """
+        return len(self.data)

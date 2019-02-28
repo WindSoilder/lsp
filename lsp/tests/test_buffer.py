@@ -68,3 +68,12 @@ def test_clear():
 
     # test we can call clear many twice without throw any error.
     buffer.clear()
+
+
+def test_buffer_length_support():
+    buffer = FixedLengthBuffer()
+    buffer.set_length(100)
+
+    assert len(buffer) == 0
+    buffer.append(b"test")
+    assert len(buffer) == 4
