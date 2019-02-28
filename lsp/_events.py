@@ -5,6 +5,7 @@ event = RequestSent({'Content-Length': 90})
 """
 
 import warnings
+import json
 from typing import Set, List, Tuple, Dict, Any
 
 
@@ -86,57 +87,92 @@ class EventBase(metaclass=_EventBaseMeta):
     def __getitem__(self, key: str) -> Any:
         return getattr(self, key)
 
+    def to_data(self, encoding: str = "ascii") -> bytes:
+        raise NotImplementedError()
 
-class DataReceived(EventBase):
+
+class DataEvent(EventBase):
+    """ The DataEvent are fired when we deal with actual data. """
+
+    _fields = {"data"}
+
+    def to_data(self, encoding: str = "utf-8") -> bytes:
+        if isinstance(self["data"], bytes):
+            data = self["data"]
+        elif isinstance(self["data"], str):
+            data = self["data"].encode(encoding)
+        elif isinstance(self["data"], (list, dict)):
+            data = json.dumps(self["data"]).encode(encoding)
+        return data
+
+
+class DataReceived(DataEvent):
     """ The DataReceived events are fired when we get request data. """
 
     _fields = {"data"}
 
 
-class DataSent(EventBase):
+class DataSent(DataEvent):
     """ The DataSent events are fired when we send request/response data. """
 
     _fields = {"data"}
 
 
-class _HeaderData(EventBase):
+class _HeaderEvent(EventBase):
     """ Fired when header is sent. """
 
     _fields = {"Content-Length", "Content-Type"}
     _defaults = [("Content-Type", "application/vscode-jsonrpc; charset=utf-8")]
 
+    def to_data(self, encoding: str = "ascii") -> bytes:
+        row_spliter = "\r\n"
+        rows = []
+        for field in self._fields:
+            rows.append(f"{field}: {self[field]}")
+        rows.append("")
+        # The header is encoded in ascii, by the definition of lsp
+        return row_spliter.join(rows).encode("ascii")
 
-class RequestReceived(_HeaderData):
+
+class RequestReceived(_HeaderEvent):
     """ The RequestReceived events are fired when we get request header. """
 
     pass
 
 
-class RequestSent(_HeaderData):
+class RequestSent(_HeaderEvent):
     """ Fired when request header is sent. """
 
     pass
 
 
-class ResponseReceived(EventBase):
+class ResponseReceived(_HeaderEvent):
     """ The ResponseReceived events are fired when we get response header. """
 
     pass
 
 
-class ResponseSent(_HeaderData):
+class ResponseSent(_HeaderEvent):
     """ Fired when response header is sent. """
 
     pass
 
 
-class Close(EventBase):
+class Close:
     """ Fired when we need to close connection. """
 
-    pass
+    def __init__(self):  # type: ignore
+        pass
+
+    def to_data(self, encoding: str = "ascii") -> bytes:
+        return b""
 
 
-class MessageEnd(EventBase):
+class MessageEnd:
     """ Fired when we send data complete. """
 
-    pass
+    def __init__(self):  # type: ignore
+        pass
+
+    def to_data(self, encoding: str = "ascii") -> bytes:
+        return b""

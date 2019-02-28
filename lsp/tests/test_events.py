@@ -1,8 +1,19 @@
 import warnings
+import json
 from unittest import mock
 import pytest
 
-from .._events import EventBase
+from .._events import (
+    EventBase,
+    RequestReceived,
+    RequestSent,
+    ResponseReceived,
+    ResponseSent,
+    Close,
+    MessageEnd,
+    DataReceived,
+    DataSent,
+)
 
 
 def test_event_subclass_definition():
@@ -113,3 +124,49 @@ def test_access_event_fields():
     event = Event1({})
     assert event["content-length"] == 10
     assert event["content-type"] == "json"
+
+
+@pytest.mark.parametrize(
+    "event_cls", [RequestReceived, RequestSent, ResponseReceived, ResponseSent]
+)
+def test_header_event_to_data(event_cls):
+    length = 100
+    expect_data = {
+        "Content-Length": f"{length}",
+        "Content-Type": "application/vscode-jsonrpc; charset=utf-8",
+    }
+    event = event_cls({"Content-Length": length})
+    data = event.to_data().decode("ascii")
+
+    parsed_data = {}
+    lines = data.split("\r\n")
+    assert lines[-1] == ""
+    lines = lines[:-1]
+    for line in lines:
+        key, val = line.split(": ")
+        parsed_data[key] = val
+    assert parsed_data == expect_data
+
+
+@pytest.mark.parametrize("event_cls", [DataReceived, DataSent])
+def test_data_event_to_data(event_cls):
+    # data event can be initialized by three ways:
+    # 1. just from bytes object
+    event = event_cls({"data": b"test_data"})
+    assert event.to_data() == b"test_data"
+
+    # 2. from string
+    event = event_cls({"data": "test_data"})
+    assert event.to_data() == b"test_data"
+
+    # 3. from json object
+    event = event_cls({"data": {"method": "didOpen"}})
+    assert json.loads(event.to_data().decode("utf-8")) == {"method": "didOpen"}
+
+
+# Close event, MessageEnd event are just for signal, which shouldn't contains
+# any data.
+@pytest.mark.parametrize("event_cls", [Close, MessageEnd])
+def test_empty_data(event_cls):
+    event = event_cls()
+    assert event.to_data() == b""
