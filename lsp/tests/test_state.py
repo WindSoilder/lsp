@@ -19,16 +19,20 @@ def test_make_state_and_we_get_a_proper_name():
 
 def test_next_state():
     # test for client side next_state
-    assert SEND_BODY == next_state(Role.CLIENT, IDLE, RequestSent)
+    assert SEND_BODY == next_state(
+        Role.CLIENT, IDLE, RequestSent({"Content-Length": 10})
+    )
     # test for server side next_state
-    assert SEND_RESPONSE == next_state(Role.SERVER, IDLE, RequestReceived)
+    assert SEND_RESPONSE == next_state(
+        Role.SERVER, IDLE, RequestReceived({"Content-Length": 20})
+    )
 
 
 def test_next_state_when_current_state_is_invalid():
     with pytest.raises(LspProtocolError):
-        next_state(Role.CLIENT, SEND_RESPONSE, RequestSent)
+        next_state(Role.CLIENT, SEND_RESPONSE, RequestSent({"Content-Length": 10}))
 
 
 def test_next_state_when_event_is_invalid():
     with pytest.raises(LspProtocolError):
-        next_state(Role.CLIENT, SEND_BODY, RequestSent)
+        next_state(Role.CLIENT, SEND_BODY, RequestSent({"Content-Length": 10}))

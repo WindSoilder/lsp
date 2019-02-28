@@ -60,7 +60,7 @@ def next_state(role: Role, current_state: Type, event: EventBase) -> Type:
     state_machine = _client_state if role == Role.CLIENT else _server_state
     if current_state not in state_machine:
         raise LspProtocolError(f"The given state {repr(current_state)} is invalid.")
-    next_state = state_machine[current_state].get(event, None)
+    next_state = state_machine[current_state].get(event.__class__, None)
     if not next_state:
         raise LspProtocolError(f"The event is invalid.")
     return next_state
