@@ -1,18 +1,16 @@
 import json
+from typing import Dict
 
 import pytest
 from .._role import Role
 from .._events import (
     RequestSent,
-    ResponseSent,
-    RequestReceived,
-    ResponseReceived,
     DataSent,
     MessageEnd,
 )
 from .._connection import Connection
 from .._errors import LspProtocolError
-from .._state import IDLE
+from .._state import IDLE, SEND_BODY
 
 
 @pytest.fixture
@@ -25,7 +23,7 @@ def test_connection_initialize():
     assert conn.our_role == Role.CLIENT
     assert conn.their_role == Role.SERVER
     assert conn.our_state == IDLE
-    assert conn.thier_state == IDLE
+    assert conn.their_state == IDLE
 
     conn = Connection("server")
     assert conn.our_role == Role.SERVER
@@ -41,39 +39,8 @@ def test_send_change_state(conn: Connection):
     event = RequestSent({"Content-Length": 30})
     conn.send(event)
     assert (
-        conn.our_state == DataSent
+        conn.our_state == SEND_BODY
     ), "while send request header, the state should changed."
-
-
-def test_send_header(conn: Connection):
-    event = RequestSent({"Content-Length": 30})
-    data = conn.send(event)
-    assert (
-        data == b'Content-Type: "application/vscode-jsonrpc; charset=utf-8"\r\n'
-        b"Content-Length: 30\r\n"
-        b"\r\n"
-    )
-    event = RequestReceived({"Content-Length": 20})
-    data = conn.send(event)
-    assert (
-        data == b'Content-Type: "application/vscode-jsonrpc; charset=utf-8"\r\n'
-        b"Content-Length: 20\r\n"
-        b"\r\n"
-    )
-    event = ResponseSent({"Content-Length": 100})
-    data = conn.send(event)
-    assert (
-        data == b'Content-Type: "application/vscode-jsonrpc; charset=utf-8"\r\n'
-        b"Content-Length: 20\r\n"
-        b"\r\n"
-    )
-    event = ResponseReceived({"Content-Length": 300})
-    data = conn.send(event)
-    assert (
-        data == b'Content-Type: "application/vscode-jsonrpc; charset=utf-8"\r\n'
-        b"Content-Length: 300\r\n"
-        b"\r\n"
-    )
 
 
 def test_send_header_more_than_once(conn: Connection):
@@ -84,13 +51,13 @@ def test_send_header_more_than_once(conn: Connection):
         conn.send(event)
 
 
-def test_send_body_before_header_sent():
+def test_send_body_before_header_sent(conn: Connection):
     with pytest.raises(LspProtocolError):
         event = DataSent({"data": "testhaha"})
         conn.send(event)
 
 
-def test_send_too_much_data():
+def test_send_too_much_data(conn: Connection):
     with pytest.raises(LspProtocolError):
         event = RequestSent({"Content-Length": 30})
         conn.send(event)
@@ -106,24 +73,45 @@ def test_end_of_message_too_earily(conn: Connection):
         conn.send(data_event)
         # what? you tell me you have no more data? but
         # I just receive 29 characters!  I will throw error!
-        conn.send(MessageEnd)
+        conn.send(MessageEnd())
 
 
 def test_send_data():
-    conn = Connection()
+    conn = Connection("client")
     data = {"method": "didOpen"}
     length = len(json.dumps(data).encode("utf-8"))
     event = RequestSent({"Content-Length": length})
     conn.send(event)
     data_event = DataSent({"data": data})
     data = conn.send(data_event)
-    conn.send(MessageEnd)  # remember to send message end event.
+    conn.send(MessageEnd())  # remember to send message end event.
     assert data == b'{"method": "didOpen"}'
 
     # Test for DataSent event with binary data
-    conn = Connection()
+    conn = Connection("client")
     event = RequestSent({"Content-Length": 30})
     conn.send(event)
     data_event = DataSent({"data": "test_data"})
     data = conn.send(data_event)
     assert data == b"test_data"
+
+
+def _header_parser(data: bytes) -> Dict[str, str]:
+    data_str = data.decode('ascii')
+    row_splitter = '\r\n'
+    parsed_data = {}
+    for row in data_str.split(row_splitter):
+        if row:
+            key, val = row.split(': ')
+            parsed_data[key] = val
+    return parsed_data
+
+
+def test_send_header(conn: Connection):
+    event = RequestSent({"Content-Length": 30})
+    data = conn.send(event)
+
+    assert _header_parser(data) == {
+        "Content-Type": "application/vscode-jsonrpc; charset=utf-8",
+        "Content-Length": "30"
+    }
