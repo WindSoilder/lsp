@@ -6,7 +6,7 @@ event = RequestSent({'Content-Length': 90})
 
 import warnings
 import json
-from typing import Set, List, Tuple, Dict, Any
+from typing import Set, List, Tuple, Dict, Any, Optional
 
 
 # Details:
@@ -69,9 +69,11 @@ class EventBase(metaclass=_EventBaseMeta):
     _fields: Set[str] = set()
     _defaults: List[Tuple[str, Any]] = []
 
-    def __init__(self, kwargs):  # type: ignore
+    def __init__(self, kwargs: Optional[Dict] = None):  # type: ignore
+        if kwargs is None:
+            return
         keys = set(kwargs.keys())
-        missing_required = self._required - keys
+        missing_required = self.__class__._required - keys
         # check for fields
         if missing_required:
             raise ValueError(f"Missing required fields: {missing_required}")
@@ -158,21 +160,15 @@ class ResponseSent(_HeaderEvent):
     pass
 
 
-class Close:
+class Close(EventBase):
     """ Fired when we need to close connection. """
-
-    def __init__(self):  # type: ignore
-        pass
 
     def to_data(self, encoding: str = "ascii") -> bytes:
         return b""
 
 
-class MessageEnd:
+class MessageEnd(EventBase):
     """ Fired when we send data complete. """
-
-    def __init__(self):  # type: ignore
-        pass
 
     def to_data(self, encoding: str = "ascii") -> bytes:
         return b""
