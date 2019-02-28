@@ -90,6 +90,13 @@ class EventBase(metaclass=_EventBaseMeta):
         return getattr(self, key)
 
     def to_data(self, encoding: str = "ascii") -> bytes:
+        """ convert event into bytes.
+
+        Args:
+            encoding (str): the encoding we use to encode data.
+        Returns:
+            bytes which represent event.
+        """
         raise NotImplementedError()
 
 
