@@ -140,8 +140,10 @@ def test_header_event_to_data(event_cls):
 
     parsed_data = {}
     lines = data.split("\r\n")
+    assert len(lines) == 4
     assert lines[-1] == ""
-    lines = lines[:-1]
+    assert lines[-2] == ""
+    lines = lines[:-2]
     for line in lines:
         key, val = line.split(": ")
         parsed_data[key] = val

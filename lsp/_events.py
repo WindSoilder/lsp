@@ -138,6 +138,9 @@ class _HeaderEvent(EventBase):
         rows = []
         for field in self._fields:
             rows.append(f"{field}: {self[field]}")
+        # TODO: make a performance test between this solution and
+        # row_spliter.join(rows).encode("ascii") + b"\r\n\r\n"
+        rows.append("")
         rows.append("")
         # The header is encoded in ascii, by the definition of lsp
         return row_spliter.join(rows).encode("ascii")
