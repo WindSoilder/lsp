@@ -1,13 +1,10 @@
 import json
-from typing import Dict
+from datetime import date
+from typing import Dict, Tuple
 
 import pytest
 from .._role import Role
-from .._events import (
-    RequestSent,
-    DataSent,
-    MessageEnd,
-)
+from .._events import RequestSent, DataSent, MessageEnd
 from .._connection import Connection
 from .._errors import LspProtocolError
 from .._state import IDLE, SEND_BODY
@@ -97,12 +94,12 @@ def test_send_data():
 
 
 def _header_parser(data: bytes) -> Dict[str, str]:
-    data_str = data.decode('ascii')
-    row_splitter = '\r\n'
+    data_str = data.decode("ascii")
+    row_splitter = "\r\n"
     parsed_data = {}
     for row in data_str.split(row_splitter):
         if row:
-            key, val = row.split(': ')
+            key, val = row.split(": ")
             parsed_data[key] = val
     return parsed_data
 
@@ -113,5 +110,58 @@ def test_send_header(conn: Connection):
 
     assert _header_parser(data) == {
         "Content-Type": "application/vscode-jsonrpc; charset=utf-8",
-        "Content-Length": "30"
+        "Content-Length": "30",
     }
+
+
+def _binary_parser(data: bytes) -> Tuple[Dict, Dict]:
+    def _extract_header():
+        header_str = header_bytes.decode("ascii")
+        results = {}
+        rows = header_str.split("\r\n")
+        for row in rows:
+            key, val = row.split(": ")
+            results[key] = val
+        return results
+
+    def _extract_body():
+        return json.loads(body_bytes.decode("utf-8"))
+
+    header_bytes, body_bytes = data.split(b"\r\n\r\n")
+    header = _extract_header()
+    body = _extract_body()
+    return header, body
+
+
+def test_send_json(conn: Connection):
+    json_data = {"method": "didOpen"}
+    data = conn.send_json(json_data)
+    parsed_header, parsed_data = _binary_parser(data)
+    assert parsed_header == {
+        "Content-Length": "21",
+        "Content-Type": "application/vscode-jsonrpc; charset=utf-8",
+    }
+    assert parsed_data == {"method": "didOpen"}
+
+
+def test_send_json_while_the_state_is_not_idle(conn: Connection):
+    conn.send(RequestSent({"Content-Length": 10}))
+    with pytest.raises(RuntimeError):
+        conn.send_json({"method": "didOpen"})
+
+
+def test_send_json_with_custom_encoder(conn: Connection):
+    class _Encoder(json.JSONEncoder):
+        def default(self, o):
+            if isinstance(o, date):
+                return f"{o.year}-{o.month}-{o.day}"
+            return super(_Encoder, self).default(o)
+
+    json_data = {"method": date(2010, 1, 1)}
+    data = conn.send_json(json_data, encoder=_Encoder)
+    parsed_header, parsed_data = _binary_parser(data)
+    assert parsed_header == {
+        "Content-Length": "22",
+        "Content-Type": "application/vscode-jsonrpc; charset=utf-8",
+    }
+    assert parsed_data == {"method": "2010-1-1"}

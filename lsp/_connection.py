@@ -1,3 +1,7 @@
+import json
+from json import JSONEncoder
+from typing import Dict, List, Union, Type, Optional
+
 from ._events import (
     EventBase,
     _HeaderEvent,
@@ -10,7 +14,7 @@ from ._events import (
     Close,
     MessageEnd,
 )
-from ._state import IDLE, next_state
+from ._state import IDLE, next_state, DONE
 from ._role import Role
 from ._buffer import FixedLengthBuffer
 from ._errors import LspProtocolError
@@ -63,3 +67,22 @@ class Connection:
         else:
             self.out_buffer.append(data)
         return data
+
+    def send_json(
+        self, data: Union[List[Dict], Dict], encoder: Optional[Type[JSONEncoder]] = None
+    ) -> bytes:
+        """ helper function for sending data.
+
+        Args:
+            data (List or Dict): A valid object which can be dumps to json
+            encoder (None or an subclass of json.JSONEncoder): The encoder to encode
+                json, if the encoder is None, the default json.JSONEncoder will be used.
+        """
+        if self.our_state is not IDLE:
+            raise RuntimeError("Please ensure that `send` method is never called.")
+        self.our_state = DONE
+        binary_data = json.dumps(data, cls=encoder).encode("utf-8")
+        request_header_event = RequestSent({"Content-Length": len(binary_data)})
+        self.out_buffer.set_length(len(binary_data))
+        self.out_buffer.append(binary_data)
+        return request_header_event.to_data() + binary_data
