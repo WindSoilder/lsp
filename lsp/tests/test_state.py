@@ -1,6 +1,13 @@
 import pytest
 
-from .._state import make_state, next_state, IDLE, SEND_BODY, SEND_RESPONSE
+from .._state import (
+    make_state,
+    next_state,
+    IDLE,
+    SEND_BODY,
+    SEND_RESPONSE,
+    RECEIVE_DATA,
+)
 from .._role import Role
 from .._events import RequestSent, RequestReceived
 from .._errors import LspProtocolError
@@ -23,7 +30,7 @@ def test_next_state():
         Role.CLIENT, IDLE, RequestSent({"Content-Length": 10})
     )
     # test for server side next_state
-    assert SEND_RESPONSE == next_state(
+    assert RECEIVE_DATA == next_state(
         Role.SERVER, IDLE, RequestReceived({"Content-Length": 20})
     )
 

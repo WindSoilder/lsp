@@ -8,6 +8,7 @@ from ._events import (
     RequestReceived,
     ResponseSent,
     EventBase,
+    DataReceived,
 )
 from ._errors import LspProtocolError
 
@@ -72,6 +73,7 @@ SEND_BODY = make_state("SEND_BODY")
 DONE = make_state("DONE")
 CLOSED = make_state("CLOSED")
 SEND_RESPONSE = make_state("SEND_RESPONSE")
+RECEIVE_DATA = make_state("RECEIVE_DATA")
 
 
 # state machine definieion
@@ -83,7 +85,12 @@ _client_state: Dict[type, Dict] = {
 }
 
 _server_state: Dict[type, Dict] = {
-    IDLE: {RequestReceived: SEND_RESPONSE, Close: CLOSED},
+    IDLE: {RequestReceived: RECEIVE_DATA, Close: CLOSED},
+    RECEIVE_DATA: {
+        DataReceived: RECEIVE_DATA,
+        Close: CLOSED,
+        MessageEnd: SEND_RESPONSE,
+    },
     SEND_RESPONSE: {ResponseSent: SEND_BODY, Close: CLOSED},
     SEND_BODY: {DataSent: SEND_BODY, Close: CLOSED, MessageEnd: DONE},
     DONE: {Close: CLOSED},
