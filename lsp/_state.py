@@ -8,7 +8,6 @@ from ._events import (
     RequestReceived,
     ResponseSent,
     EventBase,
-    DataReceived,
 )
 from ._errors import LspProtocolError
 
