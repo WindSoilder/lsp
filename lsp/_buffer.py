@@ -12,6 +12,10 @@ class FixedLengthBuffer:
         Raises:
             RuntimeError - When the length of data is more than the buffer capacity.
         """
+        if self.length_set is False:
+            raise RuntimeError(
+                "Please call `set_length` to set the length of buffer first."
+            )
         checked_length = self.remain - len(data)
         if checked_length < 0:
             raise RuntimeError("Too much data to insert into buffer.")

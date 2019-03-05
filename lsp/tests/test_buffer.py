@@ -57,6 +57,12 @@ def test_buffer_append_too_much_data():
         buffer.append(b"x" * 3)
 
 
+def test_buffer_append_without_set_length():
+    buffer = FixedLengthBuffer()
+    with pytest.raises(RuntimeError):
+        buffer.append(b"")
+
+
 def test_clear():
     buffer = FixedLengthBuffer()
     buffer.set_length(2)
