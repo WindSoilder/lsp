@@ -165,3 +165,11 @@ def test_send_json_with_custom_encoder(conn: Connection):
         "Content-Type": "application/vscode-jsonrpc; charset=utf-8",
     }
     assert parsed_data == {"method": "2010-1-1"}
+
+
+def test_receive_data(conn: Connection):
+    conn.receive(b'testdata')
+    assert conn.in_buffer.raw == b'testdata'
+
+    conn.receive(b'test')
+    assert conn.in_buffer.raw == b'testdatatest'

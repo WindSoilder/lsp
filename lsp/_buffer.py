@@ -1,3 +1,6 @@
+from typing import Optional, Union
+
+
 class FixedLengthBuffer:
     def __init__(self):  # type: ignore
         self.remain: int = 0
@@ -49,3 +52,19 @@ class FixedLengthBuffer:
     def __len__(self) -> int:
         """ return the length of buffer in bytes. """
         return len(self.data)
+
+
+class ReceiveBuffer:
+    def __init__(self, buffer: Optional[FixedLengthBuffer] = None):
+        if buffer is None:
+            buffer = FixedLengthBuffer()
+        self._inner_buffer = buffer
+        self.raw = bytearray()
+
+    def append(self, data: bytes) -> None:
+        """ Append data into buffer.
+
+        Args:
+            data (bytes): the data we need to append.
+        """
+        self.raw.extend(data)

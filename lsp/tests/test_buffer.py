@@ -1,5 +1,5 @@
 import pytest
-from .._buffer import FixedLengthBuffer
+from .._buffer import FixedLengthBuffer, ReceiveBuffer
 
 
 def test_buffer_init_state():
@@ -83,3 +83,12 @@ def test_buffer_length_support():
     assert len(buffer) == 0
     buffer.append(b"test")
     assert len(buffer) == 4
+
+
+def test_receive_buffer_append():
+    buffer = ReceiveBuffer()
+    buffer.append(b"asdf")
+    assert buffer.raw == b"asdf"
+
+    buffer.append(b"ghjk")
+    assert buffer.raw == b"asdfghjk"

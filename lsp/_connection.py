@@ -16,8 +16,28 @@ from ._events import (
 )
 from ._state import IDLE, next_state, DONE
 from ._role import Role
-from ._buffer import FixedLengthBuffer
+from ._buffer import FixedLengthBuffer, ReceiveBuffer
 from ._errors import LspProtocolError
+
+
+# The implementation of _SentinalCreater is very similar to _StateClassCreater
+# But I think we should still split them out, because the sentinal defined here
+# is not state.
+class SentinalType(type):
+    """ Class creater, which is use for define just a semantic const variable. """
+
+    def __str__(self) -> str:
+        return self.__name__
+
+    def __repr__(self) -> str:
+        return self.__name__
+
+
+def make_sentinal(name: str) -> SentinalType:
+    return SentinalType(name, (), {})
+
+
+NEED_DATA = make_sentinal("NEED_DATA")
 
 
 class Connection:
@@ -34,7 +54,7 @@ class Connection:
             raise ValueError("The `role` value should be one of ('client', 'server')")
         self.our_state = IDLE
         self.their_state = IDLE
-        self.in_buffer = FixedLengthBuffer()
+        self.in_buffer = ReceiveBuffer()
         self.out_buffer = FixedLengthBuffer()
 
     def send(self, event: EventBase) -> bytes:
@@ -86,3 +106,30 @@ class Connection:
         self.out_buffer.set_length(len(binary_data))
         self.out_buffer.append(binary_data)
         return request_header_event.to_data() + binary_data
+
+    def next_event(self) -> Union[SentinalType, EventBase]:
+        """ Parse the next event out of incoming buffer, and return it.
+
+        Note that this method will change the connection according to the status of
+        incoming buffer.
+
+        Returns:
+            It will return one of the following results:
+            1. An event object to indicate that what happened to our incoming buffer.
+            2. A special constant NEED_DATA, which indicate that user need to receive
+            data from remote server, and calling receive(data).
+        """
+        raise NotImplementedError()
+
+    def receive(self, data: bytes) -> None:
+        """ Receive data and feed it to our incoming buffer.  Then we can call
+        `next_event` to extrace out incoming events.
+
+        Args:
+            data (bytes): the data we received.
+        """
+        self.in_buffer.append(data)
+
+    def _extract_event(self) -> Union[SentinalType, EventBase]:
+        """ parse and extract event from incoming buffer. """
+        pass
