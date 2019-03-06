@@ -16,7 +16,8 @@ from ._events import (
 )
 from ._state import IDLE, next_state, DONE
 from ._role import Role
-from ._buffer import FixedLengthBuffer, ReceiveBuffer
+from ._buffer import ReceiveBuffer
+from ._collector import FixedLengthCollector
 from ._errors import LspProtocolError
 
 
@@ -55,7 +56,8 @@ class Connection:
         self.our_state = IDLE
         self.their_state = IDLE
         self.in_buffer = ReceiveBuffer()
-        self.out_buffer = FixedLengthBuffer()
+        self.out_collector = FixedLengthCollector()
+        self.in_collector = FixedLengthCollector()
 
     def send(self, event: EventBase) -> bytes:
         """ send event and returns the relative bytes.  So what this function
@@ -79,13 +81,13 @@ class Connection:
         # convert event into bytes
         data = event.to_data()
         if isinstance(event, _HeaderEvent):
-            self.out_buffer.set_length(event["Content-Length"])
-        elif isinstance(event, MessageEnd) and self.out_buffer.remain > 0:
+            self.out_collector.set_length(event["Content-Length"])
+        elif isinstance(event, MessageEnd) and self.out_collector.remain > 0:
             raise LspProtocolError(
-                f"Send Message end too quickly.  Expect {len(self.out_buffer)} bytes."
+                f"Send Message end too quickly. Expect {len(self.out_collector)} bytes."
             )
         else:
-            self.out_buffer.append(data)
+            self.out_collector.append(data)
         return data
 
     def send_json(
@@ -103,8 +105,8 @@ class Connection:
         self.our_state = DONE
         binary_data = json.dumps(data, cls=encoder).encode("utf-8")
         request_header_event = RequestSent({"Content-Length": len(binary_data)})
-        self.out_buffer.set_length(len(binary_data))
-        self.out_buffer.append(binary_data)
+        self.out_collector.set_length(len(binary_data))
+        self.out_collector.append(binary_data)
         return request_header_event.to_data() + binary_data
 
     def next_event(self) -> Union[SentinalType, EventBase]:
@@ -119,7 +121,7 @@ class Connection:
             2. A special constant NEED_DATA, which indicate that user need to receive
             data from remote server, and calling receive(data).
         """
-        raise NotImplementedError()
+        return self._extract_event()
 
     def receive(self, data: bytes) -> None:
         """ Receive data and feed it to our incoming buffer.  Then we can call
@@ -132,4 +134,25 @@ class Connection:
 
     def _extract_event(self) -> Union[SentinalType, EventBase]:
         """ parse and extract event from incoming buffer. """
-        pass
+        if self.in_buffer.header_bytes is None:
+            header = self.in_buffer.try_extract_header()
+            if header is None:
+                return NEED_DATA
+            else:
+                event_obj: _HeaderEvent
+                if self.our_role == Role.SERVER:
+                    event_obj = RequestReceived(header)
+                else:
+                    event_obj = ResponseReceived(header)
+                self.in_collector.set_length(event_obj["Content-Length"])
+                return event_obj
+
+        else:
+            data = self.in_buffer.try_extract_data()
+            if data is None:
+                if self.in_collector.remain == 0:
+                    return MessageEnd()
+                return NEED_DATA
+            else:
+                self.in_collector.append(data)
+                return DataReceived({"data": data})
