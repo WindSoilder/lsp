@@ -6,12 +6,9 @@ from ._events import (
     EventBase,
     _HeaderEvent,
     DataReceived,
-    DataSent,
     RequestReceived,
     RequestSent,
     ResponseReceived,
-    ResponseSent,
-    Close,
     MessageEnd,
 )
 from ._state import IDLE, next_state, DONE
@@ -121,7 +118,13 @@ class Connection:
             2. A special constant NEED_DATA, which indicate that user need to receive
             data from remote server, and calling receive(data).
         """
-        return self._extract_event()
+        if not (self.our_role is Role.CLIENT and self.our_state is DONE):
+            raise LspProtocolError("Client can only accept data after it send request.")
+        event = self._extract_event()
+        if isinstance(event, EventBase):
+            # transfer our state
+            self.our_state = next_state(self.our_role, self.our_state, event)
+        return event
 
     def receive(self, data: bytes) -> None:
         """ Receive data and feed it to our incoming buffer.  Then we can call
@@ -146,7 +149,6 @@ class Connection:
                     event_obj = ResponseReceived(header)
                 self.in_collector.set_length(event_obj["Content-Length"])
                 return event_obj
-
         else:
             data = self.in_buffer.try_extract_data()
             if data is None:

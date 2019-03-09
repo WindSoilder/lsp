@@ -5,7 +5,7 @@ class FixedLengthCollector:
         self.length_set = False
 
     def append(self, data: bytes) -> None:
-        """ append data into buffer.
+        """ append data into collector.
 
         Args:
             data (bytes): data we need to append to.
@@ -23,7 +23,7 @@ class FixedLengthCollector:
         self.data.extend(data)
 
     def set_length(self, length: int) -> None:
-        """ set the length of buffer.  Note that if the length is set, we can't call
+        """ set the length of collector.  Note that if the length is set, we can't call
         `set_length` without calling `clear` method.
 
 
