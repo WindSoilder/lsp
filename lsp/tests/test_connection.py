@@ -173,3 +173,22 @@ def test_receive_data(conn: Connection):
 
     conn.receive(b'test')
     assert conn.in_buffer.raw == b'testdatatest'
+
+
+def test_next_circle(conn: Connection):
+    pass
+
+
+def test_next_circle_when_state_is_invalid(conn: Connection):
+    with pytest.raises(LspProtocolError):
+        conn.go_next_circle()
+
+    # test when client is sending data
+    conn.send(RequestSent({"Content-Length": 300}))
+    with pytest.raises(LspProtocolError):
+        conn.go_next_circle()
+
+    # test when server is receiving data
+    server_conn = Connection("server")
+    with pytest.raises(LspProtocolError):
+        server_conn.go_next_circle()

@@ -1,12 +1,8 @@
 from typing import Optional, Dict
-from ._collector import FixedLengthCollector
 
 
 class ReceiveBuffer:
-    def __init__(self, buffer: Optional[FixedLengthCollector] = None):
-        if buffer is None:
-            buffer = FixedLengthCollector()
-        self._inner_buffer = buffer
+    def __init__(self):  # type: ignore
         self.raw = bytearray()
         self.header_bytes: Optional[bytearray] = None
         self.body_pointer: int = 0

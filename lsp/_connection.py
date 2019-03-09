@@ -98,7 +98,10 @@ class Connection:
                 json, if the encoder is None, the default json.JSONEncoder will be used.
         """
         if self.our_state is not IDLE:
-            raise RuntimeError("Please ensure that `send` method is never called.")
+            raise RuntimeError(
+                "Our state is not idle, may be you have send data but havn't"
+                "called `go_next_circle` to refresh state?"
+            )
         self.our_state = DONE
         binary_data = json.dumps(data, cls=encoder).encode("utf-8")
         request_header_event = RequestSent({"Content-Length": len(binary_data)})
@@ -158,3 +161,16 @@ class Connection:
             else:
                 self.in_collector.append(data)
                 return DataReceived({"data": data})
+
+    def go_next_circle(self) -> None:
+        """ go to next request/response circle.
+
+        Raises:
+            LspProtocolError - When our state and their state is not done yet.
+        """
+        if self.our_state is not DONE or self.their_state is not DONE:
+            raise LspProtocolError("State is not DONE yet.")
+        self.our_state = IDLE
+        self.their_state = IDLE
+        self.out_collector.clear()
+        self.in_collector.clear()
