@@ -11,7 +11,7 @@ from .._state import IDLE, SEND_BODY
 
 
 @pytest.fixture
-def conn():
+def client_conn():
     return Connection("client")
 
 
@@ -31,46 +31,46 @@ def test_connection_initialize():
         Connection("test")
 
 
-def test_send_change_state(conn: Connection):
+def test_send_change_state(client_conn: Connection):
     # we should test that after send, our_state is changed.
     event = RequestSent({"Content-Length": 30})
-    conn.send(event)
+    client_conn.send(event)
     assert (
-        conn.our_state == SEND_BODY
+        client_conn.our_state == SEND_BODY
     ), "while send request header, the state should changed."
 
 
-def test_send_header_more_than_once(conn: Connection):
+def test_send_header_more_than_once(client_conn: Connection):
     with pytest.raises(LspProtocolError):
         event = RequestSent({"Content-Length": 30})
-        conn.send(event)
+        client_conn.send(event)
         # send request header more than once
-        conn.send(event)
+        client_conn.send(event)
 
 
-def test_send_body_before_header_sent(conn: Connection):
+def test_send_body_before_header_sent(client_conn: Connection):
     with pytest.raises(LspProtocolError):
         event = DataSent({"data": "testhaha"})
-        conn.send(event)
+        client_conn.send(event)
 
 
-def test_send_too_much_data(conn: Connection):
+def test_send_too_much_data(client_conn: Connection):
     with pytest.raises(LspProtocolError):
         event = RequestSent({"Content-Length": 30})
-        conn.send(event)
+        client_conn.send(event)
         data_event = DataSent({"data": "a" * 31})
-        conn.send(data_event)
+        client_conn.send(data_event)
 
 
-def test_end_of_message_too_earily(conn: Connection):
+def test_end_of_message_too_earily(client_conn: Connection):
     with pytest.raises(LspProtocolError):
         event = RequestSent({"Content-Length": 30})
-        conn.send(event)
+        client_conn.send(event)
         data_event = DataSent({"data": "a" * 29})
-        conn.send(data_event)
+        client_conn.send(data_event)
         # what? you tell me you have no more data? but
         # I just receive 29 characters!  I will throw error!
-        conn.send(MessageEnd())
+        client_conn.send(MessageEnd())
 
 
 def test_send_data():
@@ -104,9 +104,9 @@ def _header_parser(data: bytes) -> Dict[str, str]:
     return parsed_data
 
 
-def test_send_header(conn: Connection):
+def test_send_header(client_conn: Connection):
     event = RequestSent({"Content-Length": 30})
-    data = conn.send(event)
+    data = client_conn.send(event)
 
     assert _header_parser(data) == {
         "Content-Type": "application/vscode-jsonrpc; charset=utf-8",
@@ -133,9 +133,9 @@ def _binary_parser(data: bytes) -> Tuple[Dict, Dict]:
     return header, body
 
 
-def test_send_json(conn: Connection):
+def test_send_json(client_conn: Connection):
     json_data = {"method": "didOpen"}
-    data = conn.send_json(json_data)
+    data = client_conn.send_json(json_data)
     parsed_header, parsed_data = _binary_parser(data)
     assert parsed_header == {
         "Content-Length": "21",
@@ -144,13 +144,13 @@ def test_send_json(conn: Connection):
     assert parsed_data == {"method": "didOpen"}
 
 
-def test_send_json_while_the_state_is_not_idle(conn: Connection):
-    conn.send(RequestSent({"Content-Length": 10}))
+def test_send_json_while_the_state_is_not_idle(client_conn: Connection):
+    client_conn.send(RequestSent({"Content-Length": 10}))
     with pytest.raises(RuntimeError):
-        conn.send_json({"method": "didOpen"})
+        client_conn.send_json({"method": "didOpen"})
 
 
-def test_send_json_with_custom_encoder(conn: Connection):
+def test_send_json_with_custom_encoder(client_conn: Connection):
     class _Encoder(json.JSONEncoder):
         def default(self, o):
             if isinstance(o, date):
@@ -158,7 +158,7 @@ def test_send_json_with_custom_encoder(conn: Connection):
             return super(_Encoder, self).default(o)
 
     json_data = {"method": date(2010, 1, 1)}
-    data = conn.send_json(json_data, encoder=_Encoder)
+    data = client_conn.send_json(json_data, encoder=_Encoder)
     parsed_header, parsed_data = _binary_parser(data)
     assert parsed_header == {
         "Content-Length": "22",
@@ -167,28 +167,34 @@ def test_send_json_with_custom_encoder(conn: Connection):
     assert parsed_data == {"method": "2010-1-1"}
 
 
-def test_receive_data(conn: Connection):
-    conn.receive(b'testdata')
-    assert conn.in_buffer.raw == b'testdata'
+def test_receive_data(client_conn: Connection):
+    client_conn.receive(b"testdata")
+    assert client_conn.in_buffer.raw == b"testdata"
 
-    conn.receive(b'test')
-    assert conn.in_buffer.raw == b'testdatatest'
-
-
-def test_next_circle(conn: Connection):
-    pass
+    client_conn.receive(b"test")
+    assert client_conn.in_buffer.raw == b"testdatatest"
 
 
-def test_next_circle_when_state_is_invalid(conn: Connection):
+def test_next_circle_when_state_is_invalid(client_conn: Connection):
     with pytest.raises(LspProtocolError):
-        conn.go_next_circle()
+        client_conn.go_next_circle()
 
     # test when client is sending data
-    conn.send(RequestSent({"Content-Length": 300}))
+    client_conn.send(RequestSent({"Content-Length": 300}))
     with pytest.raises(LspProtocolError):
-        conn.go_next_circle()
+        client_conn.go_next_circle()
 
     # test when server is receiving data
     server_conn = Connection("server")
     with pytest.raises(LspProtocolError):
         server_conn.go_next_circle()
+
+
+#############################################
+# test for state changing.                  #
+#############################################
+# Some important scenarios
+# 1. when client send data, it should change client own state.
+# 2. when client receive data, the server data should be changed.
+# 3. when server receive data, it should change server own state.
+# 4. when server send data, it should change own state

@@ -125,8 +125,8 @@ class Connection:
             raise LspProtocolError("Client can only accept data after it send request.")
         event = self._extract_event()
         if isinstance(event, EventBase):
-            # transfer our state
-            self.our_state = next_state(self.our_role, self.our_state, event)
+            # transfer their_state
+            self.their_state = next_state(self.their_role, self.their_state, event)
         return event
 
     def receive(self, data: bytes) -> None:
