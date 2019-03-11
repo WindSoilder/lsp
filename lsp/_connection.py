@@ -11,7 +11,7 @@ from ._events import (
     ResponseReceived,
     MessageEnd,
 )
-from ._state import IDLE, next_state, DONE
+from ._state import IDLE, next_state, DONE, SEND_RESPONSE
 from ._role import Role
 from ._buffer import ReceiveBuffer
 from ._collector import FixedLengthCollector
@@ -78,6 +78,12 @@ class Connection:
         # convert event into bytes
         data = event.to_data()
         if isinstance(event, _HeaderEvent):
+            if isinstance(event, RequestSent):
+                # client fire RequestSent event, server should goto next_state according
+                # to RequestReceived event
+                self.their_state = next_state(
+                    self.their_role, self.their_state, RequestReceived
+                )
             self.out_collector.set_length(event["Content-Length"])
         elif isinstance(event, MessageEnd) and self.out_collector.remain > 0:
             raise LspProtocolError(
@@ -97,16 +103,17 @@ class Connection:
             encoder (None or an subclass of json.JSONEncoder): The encoder to encode
                 json, if the encoder is None, the default json.JSONEncoder will be used.
         """
-        if self.our_state is not IDLE:
+        if self.our_state is not IDLE or self.their_state is not IDLE:
             raise RuntimeError(
-                "Our state is not idle, may be you have send data but havn't"
-                "called `go_next_circle` to refresh state?"
+                "Our state or their state is not idle, may be you have send data but"
+                "havn't called `go_next_circle` to refresh state?"
             )
-        self.our_state = DONE
         binary_data = json.dumps(data, cls=encoder).encode("utf-8")
         request_header_event = RequestSent({"Content-Length": len(binary_data)})
         self.out_collector.set_length(len(binary_data))
         self.out_collector.append(binary_data)
+        self.our_state = DONE
+        self.their_state = SEND_RESPONSE
         return request_header_event.to_data() + binary_data
 
     def next_event(self) -> Union[SentinalType, EventBase]:
@@ -140,11 +147,13 @@ class Connection:
 
     def _extract_event(self) -> Union[SentinalType, EventBase]:
         """ parse and extract event from incoming buffer. """
+        # we don't get any header yet.
         if self.in_buffer.header_bytes is None:
             header = self.in_buffer.try_extract_header()
-            if header is None:
+            if header is None:  # header data doesn't completely received.
                 return NEED_DATA
             else:
+                # receive
                 event_obj: _HeaderEvent
                 if self.our_role == Role.SERVER:
                     event_obj = RequestReceived(header)

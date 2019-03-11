@@ -28,6 +28,17 @@ def test_next_state():
     )
 
 
+def test_next_state_when_passing_state_class():
+    # test for client side next_state
+    assert SEND_BODY == next_state(
+        Role.CLIENT, IDLE, RequestSent
+    )
+    # test for server side next_state
+    assert SEND_RESPONSE == next_state(
+        Role.SERVER, IDLE, RequestReceived
+    )
+
+
 def test_next_state_when_current_state_is_invalid():
     with pytest.raises(LspProtocolError):
         next_state(Role.CLIENT, SEND_RESPONSE, RequestSent({"Content-Length": 10}))

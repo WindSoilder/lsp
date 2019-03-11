@@ -4,15 +4,20 @@ from typing import Dict, Tuple
 
 import pytest
 from .._role import Role
-from .._events import RequestSent, DataSent, MessageEnd
-from .._connection import Connection
+from .._events import RequestSent, DataSent, MessageEnd, ResponseReceived
+from .._connection import Connection, NEED_DATA
 from .._errors import LspProtocolError
-from .._state import IDLE, SEND_BODY
+from .._state import IDLE, SEND_BODY, SEND_RESPONSE
 
 
 @pytest.fixture
 def client_conn():
     return Connection("client")
+
+
+@pytest.fixture
+def server_conn():
+    return Connection("server")
 
 
 def test_connection_initialize():
@@ -29,15 +34,6 @@ def test_connection_initialize():
     # make connection with other role is invalid
     with pytest.raises(ValueError):
         Connection("test")
-
-
-def test_send_change_state(client_conn: Connection):
-    # we should test that after send, our_state is changed.
-    event = RequestSent({"Content-Length": 30})
-    client_conn.send(event)
-    assert (
-        client_conn.our_state == SEND_BODY
-    ), "while send request header, the state should changed."
 
 
 def test_send_header_more_than_once(client_conn: Connection):
@@ -195,6 +191,37 @@ def test_next_circle_when_state_is_invalid(client_conn: Connection):
 #############################################
 # Some important scenarios
 # 1. when client send data, it should change client own state.
-# 2. when client receive data, the server data should be changed.
-# 3. when server receive data, it should change server own state.
-# 4. when server send data, it should change own state
+# 2. when client send request, it should change server state.
+# 3. when client receive data, the server data should be changed.
+# 4. when server receive data, it should change server own state.
+# 5. when server send data, it should change own state
+def test_client_send_change_state(client_conn: Connection):
+    # Scenario 1: When client send data, it should change client own state.
+    # we should test that after send, our_state is changed.
+    event = RequestSent({"Content-Length": 30})
+    client_conn.send(event)
+    assert (
+        client_conn.our_state == SEND_BODY
+    ), "while send request header, the state should changed."
+
+    # Scenario 2: When client send request, server state should be changed.
+    conn = Connection("client")
+    conn.send_json({"method": "didOpen"})
+    assert conn.their_state == SEND_RESPONSE
+
+    conn = Connection("client")
+    conn.send(RequestSent({"Content-Length": 10}))
+    assert conn.their_state == SEND_RESPONSE
+
+
+# def test_client_receive_data_change_server_state(client_conn: Connection):
+#     client_conn.send_json({"method": "didOpen"})
+#     next_event = client_conn.next_event()
+#     assert next_event == NEED_DATA
+
+#     client_conn.receive(b"Content-Length: 30\r\n\r\n")
+#     event = client_conn.next_event()
+#     assert isinstance(event, ResponseReceived)
+#     assert client_conn.their_state == SEND_BODY
+
+#     # TODO: check the event object
