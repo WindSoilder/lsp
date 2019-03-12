@@ -4,10 +4,18 @@ from typing import Dict, Tuple
 
 import pytest
 from .._role import Role
-from .._events import RequestSent, DataSent, MessageEnd, ResponseReceived
+from .._events import (
+    RequestSent,
+    DataSent,
+    ResponseSent,
+    DataReceived,
+    MessageEnd,
+    ResponseReceived,
+    RequestReceived,
+)
 from .._connection import Connection, NEED_DATA
 from .._errors import LspProtocolError
-from .._state import IDLE, SEND_BODY, SEND_RESPONSE
+from .._state import IDLE, SEND_BODY, SEND_RESPONSE, DONE
 
 
 @pytest.fixture
@@ -193,8 +201,9 @@ def test_next_circle_when_state_is_invalid(client_conn: Connection):
 # 1. when client send data, it should change client own state.
 # 2. when client send request, it should change server state.
 # 3. when client receive data, the server data should be changed.
-# 4. when server receive data, it should change server own state.
-# 5. when server send data, it should change own state
+# 4. when server receive request, it should change server own state.
+# 5. when server receive request, it should change client state.
+# 6. when server send data, it should change own state
 def test_client_send_change_state(client_conn: Connection):
     # Scenario 1: When client send data, it should change client own state.
     # we should test that after send, our_state is changed.
@@ -214,14 +223,63 @@ def test_client_send_change_state(client_conn: Connection):
     assert conn.their_state == SEND_RESPONSE
 
 
-# def test_client_receive_data_change_server_state(client_conn: Connection):
-#     client_conn.send_json({"method": "didOpen"})
-#     next_event = client_conn.next_event()
-#     assert next_event == NEED_DATA
+def test_client_receive_data_change_server_state(client_conn: Connection):
+    # Scenario 3: when client receive data, the server data should be changed.
+    client_conn.send_json({"method": "didOpen"})
+    next_event = client_conn.next_event()
+    assert next_event == NEED_DATA
 
-#     client_conn.receive(b"Content-Length: 30\r\n\r\n")
-#     event = client_conn.next_event()
-#     assert isinstance(event, ResponseReceived)
-#     assert client_conn.their_state == SEND_BODY
+    client_conn.receive(b"Content-Length: 30\r\n\r\n")
+    event = client_conn.next_event()
+    assert isinstance(event, ResponseReceived)
+    assert client_conn.their_state == SEND_BODY
 
-#     # TODO: check the event object
+
+def test_server_receive_request_change_state(server_conn: Connection):
+    # Scenario 4: when server receive request, it should change to
+    # SendResponseState
+    server_conn.receive(b"Content-Length: 30\r\n\r\n")
+    event = server_conn.next_event()
+    assert isinstance(event, RequestReceived)
+    assert server_conn.our_state == SEND_RESPONSE
+
+    # Scenario 5: when server receive request, the client state should
+    # change to SEND_BODY
+    assert server_conn.their_state == SEND_BODY
+
+
+def test_server_next_event_values(server_conn: Connection):
+    # 1. server don't receive any data yet.
+    event = server_conn.next_event()
+    assert event is NEED_DATA
+    # 2. server receive header incompletely
+    server_conn.receive(b"Content-Length: 30\r\n\r")
+    event = server_conn.next_event()
+    assert event is NEED_DATA
+    # 3. server receive header.
+    server_conn.receive(b"\n")
+    event = server_conn.next_event()
+    assert isinstance(event, RequestReceived)
+    # 4. server receive body.
+    assert server_conn.next_event() is NEED_DATA
+    server_conn.receive(b"x" * 10)
+    assert isinstance(server_conn.next_event(), DataReceived)
+    assert server_conn.next_event() is NEED_DATA
+    # 5. server receive data complete.
+    server_conn.receive(b"x" * 20)
+    assert isinstance(server_conn.next_event(), DataReceived)
+    assert isinstance(server_conn.next_event(), MessageEnd)
+
+
+def test_server_send_response_change_state(server_conn: Connection):
+    # HACK: force go to SEND_RESPONSE state
+    server_conn.our_state = SEND_RESPONSE
+
+    server_conn.send(ResponseSent({"Content-Length": 30}))
+    assert server_conn.our_state == SEND_BODY
+    server_conn.send(DataSent({"data": "x" * 10}))
+    assert server_conn.our_state == SEND_BODY
+    server_conn.send(DataSent({"data": "x" * 20}))
+    # remember to send message end
+    server_conn.send(MessageEnd())
+    assert server_conn.our_state == DONE

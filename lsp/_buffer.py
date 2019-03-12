@@ -63,6 +63,8 @@ class ReceiveBuffer:
             )
         # TODO: need to rewrite the implementation.  Because the slice operation will
         # copy memeory, and it may be high cost.
+        if self.body_pointer == len(self.raw):
+            return None
         # fmt: off
         data = self.raw[self.body_pointer:]
         # fmt: on

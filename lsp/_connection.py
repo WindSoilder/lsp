@@ -6,10 +6,12 @@ from ._events import (
     EventBase,
     _HeaderEvent,
     DataReceived,
+    DataSent,
     RequestReceived,
     RequestSent,
     ResponseReceived,
     MessageEnd,
+    ResponseSent,
 )
 from ._state import IDLE, next_state, DONE, SEND_RESPONSE
 from ._role import Role
@@ -128,12 +130,29 @@ class Connection:
             2. A special constant NEED_DATA, which indicate that user need to receive
             data from remote server, and calling receive(data).
         """
-        if not (self.our_role is Role.CLIENT and self.our_state is DONE):
+        if self.our_role is Role.CLIENT and self.our_state is not DONE:
             raise LspProtocolError("Client can only accept data after it send request.")
         event = self._extract_event()
         if isinstance(event, EventBase):
+            their_event: Union[type, EventBase]
+            # when we get RequestReceived/ResponseReceived event, we should change other
+            # side's state by RequestSent/ResponseSent event.
+            if isinstance(event, _HeaderEvent):
+                if isinstance(event, RequestReceived):
+                    # when server get RequestReceived event, it should change
+                    # the state according to this event.
+                    self.our_state = next_state(self.our_role, self.our_state, event)
+                    their_event = RequestSent
+                elif isinstance(event, ResponseReceived):
+                    their_event = ResponseSent
+            elif isinstance(event, DataReceived):
+                their_event = DataSent
+            else:
+                their_event = event.__class__
             # transfer their_state
-            self.their_state = next_state(self.their_role, self.their_state, event)
+            self.their_state = next_state(
+                self.their_role, self.their_state, their_event
+            )
         return event
 
     def receive(self, data: bytes) -> None:
@@ -153,13 +172,12 @@ class Connection:
             if header is None:  # header data doesn't completely received.
                 return NEED_DATA
             else:
-                # receive
                 event_obj: _HeaderEvent
                 if self.our_role == Role.SERVER:
                     event_obj = RequestReceived(header)
                 else:
                     event_obj = ResponseReceived(header)
-                self.in_collector.set_length(event_obj["Content-Length"])
+                self.in_collector.set_length(int(event_obj["Content-Length"]))
                 return event_obj
         else:
             data = self.in_buffer.try_extract_data()

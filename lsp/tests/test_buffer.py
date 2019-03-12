@@ -38,7 +38,7 @@ def test_receive_buffer_try_extract_data():
     assert data == b"first data"
     # when extract data out, we should extract out emtpy data.
     data = buffer.try_extract_data()
-    assert data == b""
+    assert data is None
     buffer.append(b"second data")
     data = buffer.try_extract_data()
     assert data == b"second data"
@@ -56,4 +56,4 @@ def test_receive_buffer_try_extract_data_when_no_data_yet():
     buffer.append(b"Content-Length: 123\r\n\r\n")
     buffer.try_extract_header()
     data = buffer.try_extract_data()
-    assert data == b""
+    assert data is None
