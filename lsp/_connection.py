@@ -43,7 +43,11 @@ NEED_DATA = make_sentinal("NEED_DATA")
 
 
 class Connection:
-    """ Language server protocol Connection object. """
+    """ Language server protocol Connection object.
+
+    Args:
+        role (str): represent our role.  Which can be 'cliet' or 'server'
+    """
 
     def __init__(self, role: str):  # type: ignore
         if role == "client":
@@ -68,7 +72,7 @@ class Connection:
         Args:
             event (EventBase): event we need to send.
         Returns:
-            Bytes we can send to user.
+            Bytes we can send to other side.
         """
         # transfer our state
         self.our_state = next_state(self.our_role, self.our_state, event)
@@ -106,6 +110,8 @@ class Connection:
             data (List or Dict): A valid object which can be dumps to json
             encoder (None or an subclass of json.JSONEncoder): The encoder to encode
                 json, if the encoder is None, the default json.JSONEncoder will be used.
+        Returns:
+            Bytes that we can send to other side.
         """
         if self.our_state is not IDLE or self.their_state is not IDLE:
             raise RuntimeError(
@@ -137,8 +143,9 @@ class Connection:
         event = self._extract_event()
         if isinstance(event, EventBase):
             their_event: Union[type, EventBase]
-            # when we get RequestReceived/ResponseReceived event, we should change other
-            # side's state by RequestSent/ResponseSent event.
+            # when we get RequestReceived/ResponseReceived/DataReceived event, we
+            # should change other side's state by RequestSent/ResponseSent/DataSent
+            # event.
             if isinstance(event, _HeaderEvent):
                 if isinstance(event, RequestReceived):
                     # when server get RequestReceived event, it should change

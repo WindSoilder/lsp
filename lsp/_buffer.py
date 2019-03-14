@@ -2,6 +2,9 @@ from typing import Optional, Dict
 
 
 class ReceiveBuffer:
+    """ Inner data buffer.  It can receive data, and extract our header part and body
+    part later. """
+
     def __init__(self):  # type: ignore
         self.raw = bytearray()
         self.header_bytes: Optional[bytearray] = None
