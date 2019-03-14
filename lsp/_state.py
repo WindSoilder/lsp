@@ -11,15 +11,7 @@ from ._events import (
 )
 from ._errors import LspProtocolError
 
-__all__ = [
-    "make_state",
-    "next_state",
-    "IDLE",
-    "SEND_BODY",
-    "DONE",
-    "CLOSED",
-    "SEND_RESPONSE",
-]
+__all__ = ["IDLE", "SEND_BODY", "SEND_RESPONSE", "DONE", "CLOSED"]
 
 
 class _StateClassCreater(type):

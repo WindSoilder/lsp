@@ -1,11 +1,22 @@
-__all__ = ["Connection", "RequestReceived", "DataReceived", "ResponseReceived"]
-
+__all__ = ["LspProtocolError"]
+from ._errors import LspProtocolError
 from ._connection import Connection, NEED_DATA
 from ._events import (
+    # Mainly used by server
     RequestReceived,
-    DataReceived,
+    ResponseSent,
+    # Mainly userd by client
     ResponseReceived,
+    RequestSent,
+    # Common
     DataSent,
+    DataReceived,
+    MessageEnd,
+    Close,
     MessageEnd,
 )
-from ._state import IDLE, SEND_BODY, SEND_RESPONSE
+from ._state import IDLE, SEND_BODY, SEND_RESPONSE, DONE, CLOSED
+
+__all__ += _connection.__all__
+__all__ += _events.__all__
+__all__ += _state.__all__

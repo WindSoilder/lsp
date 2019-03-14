@@ -19,6 +19,8 @@ from ._buffer import ReceiveBuffer
 from ._collector import FixedLengthCollector
 from ._errors import LspProtocolError
 
+__all__ = ["Connection", "NEED_DATA"]
+
 
 # The implementation of _SentinalCreater is very similar to _StateClassCreater
 # But I think we should still split them out, because the sentinal defined here

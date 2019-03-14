@@ -9,6 +9,22 @@ import json
 from typing import Set, List, Tuple, Dict, Any, Optional
 
 
+__all__ = [
+    # Mainly used by server
+    "RequestReceived",
+    "ResponseSent",
+    # Mainly userd by client
+    "ResponseReceived",
+    "RequestSent",
+    # Common
+    "DataSent",
+    "DataReceived",
+    "MessageEnd",
+    "Close",
+    "MessageEnd",
+]
+
+
 # Details:
 # 1. MetaClass should derived from type
 # 2. When we are creating a class, the MetaClass' __new__, __init__ function
