@@ -122,8 +122,8 @@ class DataEvent(EventBase):
     _fields = {"data"}
 
     def to_data(self, encoding: str = "utf-8") -> bytes:
-        if isinstance(self["data"], bytes):
-            data = self["data"]
+        if isinstance(self["data"], (bytes, bytearray)):
+            data = bytes(self["data"])
         elif isinstance(self["data"], str):
             data = self["data"].encode(encoding)
         elif isinstance(self["data"], (list, dict)):

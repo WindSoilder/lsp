@@ -165,6 +165,11 @@ def test_data_event_to_data(event_cls):
     event = event_cls({"data": {"method": "didOpen"}})
     assert json.loads(event.to_data().decode("utf-8")) == {"method": "didOpen"}
 
+    # 4. from byte_array object
+    event = event_cls({"data": bytearray(b"test_data2")})
+    assert isinstance(event.to_data(), bytes)
+    assert event.to_data() == b"test_data2"
+
 
 # Close event, MessageEnd event are just for signal, which shouldn't contains
 # any data.
