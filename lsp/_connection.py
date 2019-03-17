@@ -208,5 +208,6 @@ class Connection:
             raise LspProtocolError("State is not DONE yet.")
         self.our_state = IDLE
         self.their_state = IDLE
+        self.in_buffer.clear()
         self.out_collector.clear()
         self.in_collector.clear()
