@@ -73,3 +73,10 @@ class ReceiveBuffer:
         # fmt: on
         self.body_pointer += len(data)
         return data
+
+    def clear(self) -> None:
+        """ clear the buffer.  Which is useful when Connection want
+        to start the next circle. """
+        self.header_bytes = None
+        self.raw.clear()
+        self.body_pointer == 0

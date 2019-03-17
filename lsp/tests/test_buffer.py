@@ -57,3 +57,14 @@ def test_receive_buffer_try_extract_data_when_no_data_yet():
     buffer.try_extract_header()
     data = buffer.try_extract_data()
     assert data is None
+
+
+def test_receive_buffer_clear():
+    buffer = ReceiveBuffer()
+
+    buffer.append(b"Content-Length: 123\r\n\r\n")
+    buffer.append(b"data-haha")
+    buffer.clear()
+
+    assert buffer.raw == b""
+    assert buffer.header_bytes is None
