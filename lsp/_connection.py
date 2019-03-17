@@ -113,18 +113,33 @@ class Connection:
         Returns:
             Bytes that we can send to other side.
         """
-        if self.our_state is not IDLE or self.their_state is not IDLE:
-            raise RuntimeError(
-                "Our state or their state is not idle, may be you have send data but"
-                "havn't called `go_next_circle` to refresh state?"
-            )
+
+        def _check_state() -> None:
+            if self.our_role == Role.SERVER:
+                if self.our_state is not SEND_RESPONSE or self.their_state is not DONE:
+                    raise LspProtocolError(
+                        "Can only send data when we receive request.\n"
+                        f"But for now our_state: {self.our_state}, "
+                        f"their_state: {self.their_state}"
+                    )
+            else:
+                if self.our_state is not IDLE or self.their_state is not IDLE:
+                    raise LspProtocolError(
+                        "Our state or their state is not idle, may be you have send "
+                        "data but havn't called `go_next_circle` to refresh state?"
+                    )
+
+        def _set_state() -> None:
+            self.our_state = DONE
+            if self.our_role == Role.CLIENT:
+                self.their_state = SEND_RESPONSE
+
+        # do state checking.
+        _check_state()
         binary_data = json.dumps(data, cls=encoder).encode("utf-8")
-        request_header_event = RequestSent({"Content-Length": len(binary_data)})
-        self.out_collector.set_length(len(binary_data))
-        self.out_collector.append(binary_data)
-        self.our_state = DONE
-        self.their_state = SEND_RESPONSE
-        return request_header_event.to_data() + binary_data
+        header_event = _HeaderEvent({"Content-Length": len(binary_data)})
+        _set_state()
+        return header_event.to_data() + binary_data
 
     def next_event(self) -> Union[SentinalType, EventBase]:
         """ Parse the next event out of incoming buffer, and return it.

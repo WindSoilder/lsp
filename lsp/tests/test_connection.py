@@ -137,7 +137,7 @@ def _binary_parser(data: bytes) -> Tuple[Dict, Dict]:
     return header, body
 
 
-def test_send_json(client_conn: Connection):
+def test_client_send_json(client_conn: Connection):
     json_data = {"method": "didOpen"}
     data = client_conn.send_json(json_data)
     parsed_header, parsed_data = _binary_parser(data)
@@ -148,9 +148,30 @@ def test_send_json(client_conn: Connection):
     assert parsed_data == {"method": "didOpen"}
 
 
-def test_send_json_while_the_state_is_not_idle(client_conn: Connection):
+def test_server_send_json(server_conn: Connection):
+    # HACK: change the state of server connection
+    server_conn.our_state = SEND_RESPONSE
+    server_conn.their_state = DONE
+
+    json_data = {"data": "I get it:)"}
+    data = server_conn.send_json(json_data)
+    parsed_header, parsed_data = _binary_parser(data)
+
+    assert parsed_header == {
+        "Content-Length": "22",
+        "Content-Type": "application/vscode-jsonrpc; charset=utf-8",
+    }
+    assert parsed_data == {"data": "I get it:)"}
+
+
+def test_server_send_json_when_doesn_receive_data_from_client(server_conn: Connection):
+    with pytest.raises(LspProtocolError):
+        server_conn.send_json({"data": "oh-yeah"})
+
+
+def test_client_send_json_while_the_state_is_not_idle(client_conn: Connection):
     client_conn.send(RequestSent({"Content-Length": 10}))
-    with pytest.raises(RuntimeError):
+    with pytest.raises(LspProtocolError):
         client_conn.send_json({"method": "didOpen"})
 
 
