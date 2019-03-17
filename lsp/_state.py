@@ -61,7 +61,7 @@ def next_state(role: Role, current_state: Type, event: Union[type, EventBase]) -
         raise LspProtocolError(
             textwrap.indent(
                 f"\nThe event is invalid.  More information: "
-                f"current state - {current_state}.  event - {event_cls}",
+                f"role - {role}; state - {current_state}; event - {event_cls}",
                 " " * 4,
             )
         )
