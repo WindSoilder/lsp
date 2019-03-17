@@ -79,4 +79,4 @@ class ReceiveBuffer:
         to start the next circle. """
         self.header_bytes = None
         self.raw.clear()
-        self.body_pointer == 0
+        self.body_pointer = 0
