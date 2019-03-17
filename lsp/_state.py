@@ -1,3 +1,5 @@
+import textwrap
+
 from typing import Type, Dict, Union
 from ._role import Role
 from ._events import (
@@ -56,7 +58,13 @@ def next_state(role: Role, current_state: Type, event: Union[type, EventBase]) -
         raise LspProtocolError(f"The given state {repr(current_state)} is invalid.")
     next_state = state_machine[current_state].get(event_cls, None)
     if not next_state:
-        raise LspProtocolError(f"The event is invalid.")
+        raise LspProtocolError(
+            textwrap.indent(
+                f"\nThe event is invalid.  More information: "
+                f"current state - {current_state}.  event - {event_cls}",
+                " " * 4,
+            )
+        )
     return next_state
 
 
