@@ -1,6 +1,6 @@
 import json
 from json import JSONEncoder
-from typing import Dict, List, Union, Type, Optional
+from typing import Dict, List, Union, Type, Optional, Tuple
 
 from ._events import (
     EventBase,
@@ -219,10 +219,58 @@ class Connection:
         Raises:
             LspProtocolError - When our state and their state is not done yet.
         """
-        if self.our_state is not DONE or self.their_state is not DONE:
-            raise LspProtocolError("State is not DONE yet.")
+        # As server: when we receive Notification complete
+        # As client: when we cend Notification complete
+        # We can just go_next_circle.  But just ensure that client's state is DONE
+        # server's state is SEND_RESPONSE
+        if self.our_role is Role.CLIENT:
+            if self.our_state is not DONE or (
+                self.their_state not in (SEND_RESPONSE, DONE)
+            ):
+                raise LspProtocolError(
+                    "As client, my state is not done or server's state is invalid"
+                )
+        else:
+            if (
+                self.our_state not in (SEND_RESPONSE, DONE)
+                or self.their_state is not DONE
+            ):
+                raise LspProtocolError(
+                    "As client, my state is not SEND_RESPONSE or DONE, "
+                    "or client's state is invalid"
+                )
         self.our_state = IDLE
         self.their_state = IDLE
         self.in_buffer.clear()
         self.out_collector.clear()
         self.in_collector.clear()
+
+    def get_received_data(
+        self, raw: bool = False
+    ) -> Tuple[Dict, Union[bytes, Dict, List]]:
+        """ A helper method to extract our received data.  This method is useful
+        when we get `MessageEnd` event(which indicate we have received data completely).
+        And it returns a eaiily-handled python objects.
+
+        Args:
+            raw (bool): Indicate that if we should return raw data(in bytes).  Or
+                deserialized data.
+
+        Returns:
+            A tuple contains (header, data), header has type dict.
+            And data's type can be bytes when raw is True(So it can be serialize by
+            other json library on user code).  Or it can be a dict or list object.
+
+        Raises:
+            Raise RuntimeError when we don't receive data completely.
+        """
+        header = self.in_buffer.try_extract_header()
+        if header is None or not self.in_collector.full():
+            raise RuntimeError(
+                "Receive data incompletely.  Please call `next_event()` until"
+                "Received MessageEnd event"
+            )
+        if raw is False:
+            return header, json.loads(self.in_buffer.raw)
+        else:
+            return header, bytes(self.in_buffer.raw)

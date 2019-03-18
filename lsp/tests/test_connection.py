@@ -304,3 +304,26 @@ def test_server_send_response_change_state(server_conn: Connection):
     # remember to send message end
     server_conn.send(MessageEnd())
     assert server_conn.our_state == DONE
+
+
+def test_get_received_data(server_conn: Connection):
+    server_conn.receive(b"Content-Length: 30\r\n\r\n" + b'"' + b'x' * 28 + b'"')
+    server_conn.next_event()
+    server_conn.next_event()
+    server_conn.next_event()
+    header, content = server_conn.get_received_data()
+    assert header == {"Content-Length": "30"}
+    assert content == 'x' * 28
+
+
+def test_get_received_data_when_we_receive_data_incompletely(server_conn: Connection):
+    # receive header in-completely
+    server_conn.receive(b"Content-Length: 21\r\n\r")
+
+    with pytest.raises(RuntimeError):
+        server_conn.get_received_data()
+
+    # receive header completely, but data in-completely
+    server_conn.receive(b"\n" + b'{"method":"2010-1-1"')
+    with pytest.raises(RuntimeError):
+        server_conn.get_received_data()

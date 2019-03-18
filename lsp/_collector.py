@@ -49,3 +49,7 @@ class FixedLengthCollector:
     def __len__(self) -> int:
         """ return the length of buffer in bytes. """
         return len(self.data)
+
+    def full(self) -> bool:
+        """ return True if collect data complete. """
+        return self.length_set and self.remain == 0

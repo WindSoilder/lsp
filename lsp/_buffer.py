@@ -7,8 +7,30 @@ class ReceiveBuffer:
 
     def __init__(self):  # type: ignore
         self.raw = bytearray()
-        self.header_bytes: Optional[bytearray] = None
         self.body_pointer: int = 0
+        self._header_bytes: Optional[bytearray] = None
+        self.header: Optional[Dict[str, str]] = None
+
+    @property
+    def header_bytes(self) -> Optional[bytearray]:
+        return self._header_bytes
+
+    @header_bytes.setter
+    def header_bytes(self, value: Optional[bytearray]) -> None:
+        def _extract_header() -> Dict[str, str]:
+            header_str = self._header_bytes.decode("ascii")  # type: ignore
+            results = {}
+            rows = header_str.split("\r\n")
+            for row in rows:
+                key, val = row.split(": ")
+                results[key] = val
+            return results
+
+        self._header_bytes = value
+        if value is None:
+            self.header = None
+        else:
+            self.header = _extract_header()
 
     def append(self, data: bytes) -> None:
         """ Append data into buffer.
@@ -26,15 +48,8 @@ class ReceiveBuffer:
             A dict.  Else we return None.
         """
 
-        def _extract_header() -> Dict[str, str]:
-            header_str = self.header_bytes.decode("ascii")  # type: ignore
-            results = {}
-            rows = header_str.split("\r\n")
-            for row in rows:
-                key, val = row.split(": ")
-                results[key] = val
-            return results
-
+        if self.header is not None:
+            return self.header
         data_splitted = self.raw.split(b"\r\n\r\n")
         if len(data_splitted) == 1:  # so we don't receive header data complete yet.
             return None
@@ -46,8 +61,7 @@ class ReceiveBuffer:
                 bytearray(data_splitted[0]),
                 bytearray(data_splitted[1]),
             )
-            headers = _extract_header()
-            return headers
+            return self.header
 
     def try_extract_data(self) -> Optional[bytes]:
         """ Try to extract the actual data in buffer.  Note that we should call
