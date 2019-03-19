@@ -5,7 +5,16 @@ So the actual language server can build on this, it can be integreted with trio,
 * Required python version
 Python >= 3.6
 
-
+* How to install it
+There are two ways to install lsp:
+    - install via pip (recommended)
+    #+BEGIN_SRC shell
+    pip install lsp
+    #+END_SRC
+    - install via setup.py
+    #+BEGIN_SRC shell
+    python setup.py install
+    #+END_SRC
 * Basic Usage example
 ** For client
 #+BEGIN_SRC python
