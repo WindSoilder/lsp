@@ -3,6 +3,7 @@ from json import JSONEncoder
 from typing import Dict, List, Union, Type, Optional, Tuple
 
 from ._events import (
+    Close,
     EventBase,
     _HeaderEvent,
     DataReceived,
@@ -274,3 +275,8 @@ class Connection:
             return header, json.loads(self.in_buffer.raw)
         else:
             return header, bytes(self.in_buffer.raw)
+
+    def close(self) -> None:
+        """ Close the connection, make both states go to closed. """
+        self.our_state = next_state(self.our_role, self.our_state, Close)
+        self.their_state = next_state(self.their_role, self.their_state, Close)

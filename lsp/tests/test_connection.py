@@ -15,7 +15,7 @@ from .._events import (
 )
 from .._connection import Connection, NEED_DATA
 from .._errors import LspProtocolError
-from .._state import IDLE, SEND_BODY, SEND_RESPONSE, DONE
+from .._state import IDLE, SEND_BODY, SEND_RESPONSE, DONE, CLOSED
 
 
 @pytest.fixture
@@ -327,3 +327,18 @@ def test_get_received_data_when_we_receive_data_incompletely(server_conn: Connec
     server_conn.receive(b"\n" + b'{"method":"2010-1-1"')
     with pytest.raises(RuntimeError):
         server_conn.get_received_data()
+
+
+def test_close(client_conn: Connection):
+    client_conn.close()
+    assert client_conn.our_state == CLOSED
+    assert client_conn.their_state == CLOSED
+
+
+def test_send_data_after_closed(client_conn: Connection):
+    client_conn.close()
+
+    with pytest.raises(LspProtocolError):
+        client_conn.send_json({
+            "method": "didOpen"
+        })
