@@ -1,4 +1,4 @@
-Language Server Protocol implementation in sans-io pattern.  Which is highly inspired by [Sans-IO Pattern](https://sans-io.readthedocs.io/how-to-sans-io.html).  And some relatived projects: [hyper-h2](https://github.com/python-hyper/hyper-h2).  [h11](https://github.com/python-hyper/h11)
+Language Server Protocol implementation in sans-io pattern.  Which is highly inspired by [[https://sans-io.readthedocs.io/how-to-sans-io.html][Sans-IO pattern]].  And some relatived projects: [[https://github.com/python-hyper/hyper-h2][hyper-h2]],  [[https://github.com/python-hyper/h11][h11]]
 
 So the actual language server can build on this, it can be integreted with trio, asyncio, or some other frameworks.
 
