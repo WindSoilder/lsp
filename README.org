@@ -1,4 +1,7 @@
-Language Server Protocol implementation in sans-io pattern.  Which is highly inspired by [[https://sans-io.readthedocs.io/how-to-sans-io.html][Sans-IO pattern]].  And some relatived projects: [[https://github.com/python-hyper/hyper-h2][hyper-h2]],  [[https://github.com/python-hyper/h11][h11]]
+* LSP
+Language Server Protocol implementation in sans-io pattern.  Which is highly inspired by [[https://sans-io.readthedocs.io/how-to-sans-io.html][Sans-IO pattern]].  And some relatived projects:
+- [[https://github.com/python-hyper/hyper-h2][hyper-h2]]
+- [[https://github.com/python-hyper/h11][h11]]
 
 So the actual language server can build on this, it can be integreted with trio, asyncio, or some other frameworks.
 
@@ -132,6 +135,7 @@ For more usage example, please check out files in *examples/servers* folder.
 1. Want to send json data?  You can try =conn.send_json=.
 2. Want to know what we should do next?  You can try =conn.next_event=.
 3. After receive data, please don't forget to call =conn.receive(data)=.  Which will save data into inner buffer, and it can drive =conn.next_event= method returns other events.
+4. When Receive =MessageEnd= event, we can just call =conn.get_received_data= to fetch for incoming data.
 
 * Main events we will get from next_event
 ** Client

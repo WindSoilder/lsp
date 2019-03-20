@@ -16,7 +16,9 @@ from ._events import (
     MessageEnd,
 )
 from ._state import IDLE, SEND_BODY, SEND_RESPONSE, DONE, CLOSED
+from ._version import __version__
 
 __all__ += _connection.__all__
 __all__ += _events.__all__
 __all__ += _state.__all__
+__all__ += [__version__]
