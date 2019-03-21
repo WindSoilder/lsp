@@ -32,7 +32,10 @@ __all__ = [
 # For more information, please see two useful links:
 # https://stackoverflow.com/questions/100003/what-are-metaclasses-in-python
 # https://docs.python.org/3/reference/datamodel.html#metaclasses
-class _EventBaseMeta(type):
+
+# NOTE: because it's just the helper implementation of event class definition
+# so we needn't test for it.
+class _EventBaseMeta(type):  # pragma: no cover
     """ MetaClass for lsp events.
 
     When a class using this metaclass, the '_required' fields will be

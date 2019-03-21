@@ -171,6 +171,15 @@ def test_data_event_to_data(event_cls):
     assert event.to_data() == b"test_data2"
 
 
+def test_evnet_donent_implement_to_data():
+    class Event1(EventBase):
+        _fields = {"content-length"}
+
+    event = Event1({"content-length": "30"})
+    with pytest.raises(NotImplementedError):
+        event.to_data()
+
+
 # Close event, MessageEnd event are just for signal, which shouldn't contains
 # any data.
 @pytest.mark.parametrize("event_cls", [Close, MessageEnd])

@@ -163,6 +163,11 @@ def test_server_send_json(server_conn: Connection):
     }
     assert parsed_data == {"data": "I get it:)"}
 
+    # then go_next_circle to prepare new data
+    server_conn.go_next_circle()
+    assert server_conn.our_state == IDLE
+    assert server_conn.their_state == IDLE
+
 
 def test_server_send_json_when_doesn_receive_data_from_client(server_conn: Connection):
     with pytest.raises(LspProtocolError):
@@ -180,16 +185,15 @@ def test_send_json_with_custom_encoder(client_conn: Connection):
         def default(self, o):
             if isinstance(o, date):
                 return f"{o.year}-{o.month}-{o.day}"
-            return super(_Encoder, self).default(o)
 
-    json_data = {"method": date(2010, 1, 1)}
+    json_data = {"method": date(2010, 1, 1), "arg": 3}
     data = client_conn.send_json(json_data, encoder=_Encoder)
     parsed_header, parsed_data = _binary_parser(data)
     assert parsed_header == {
-        "Content-Length": "22",
+        "Content-Length": "32",
         "Content-Type": "application/vscode-jsonrpc; charset=utf-8",
     }
-    assert parsed_data == {"method": "2010-1-1"}
+    assert parsed_data == {"method": "2010-1-1", "arg": 3}
 
 
 def test_receive_data(client_conn: Connection):
@@ -307,13 +311,24 @@ def test_server_send_response_change_state(server_conn: Connection):
 
 
 def test_get_received_data(server_conn: Connection):
-    server_conn.receive(b"Content-Length: 30\r\n\r\n" + b'"' + b'x' * 28 + b'"')
+    server_conn.receive(b"Content-Length: 30\r\n\r\n" + b'"' + b"x" * 28 + b'"')
     server_conn.next_event()
     server_conn.next_event()
     server_conn.next_event()
+    # test default arguments
     header, content = server_conn.get_received_data()
     assert header == {"Content-Length": "30"}
-    assert content == 'x' * 28
+    assert content == "x" * 28
+
+    # test raw arguments false arguments
+    header, content = server_conn.get_received_data(raw=False)
+    assert header == {"Content-Length": "30"}
+    assert content == "x" * 28
+
+    # test get received_data with true arguments
+    header, content = server_conn.get_received_data(raw=True)
+    assert header == {"Content-Length": "30"}
+    assert content == b'"' + b"x" * 28 + b'"'
 
 
 def test_get_received_data_when_we_receive_data_incompletely(server_conn: Connection):
@@ -339,6 +354,14 @@ def test_send_data_after_closed(client_conn: Connection):
     client_conn.close()
 
     with pytest.raises(LspProtocolError):
-        client_conn.send_json({
-            "method": "didOpen"
-        })
+        client_conn.send_json({"method": "didOpen"})
+
+
+def test_need_data_representation():
+    assert str(NEED_DATA) == "NEED_DATA"
+    assert repr(NEED_DATA) == "NEED_DATA"
+
+
+def test_next_event_when_client_doesnt_send_data_yet(client_conn: Connection):
+    with pytest.raises(LspProtocolError):
+        client_conn.next_event()
