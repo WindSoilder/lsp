@@ -1,4 +1,13 @@
+# Define FixedLengthCollector is helpful because language server protocol
+# is fixed-length body protocol.  So the class can help us check out that
+# if we add too much data during appending data, which can throw out error
+# as soon as possible.
+
+
 class FixedLengthCollector:
+    """ Collector which can handle data, and automatically check out
+    if we push too much data into it. """
+
     def __init__(self):  # type: ignore
         self.remain: int = 0
         self.data = bytearray()
