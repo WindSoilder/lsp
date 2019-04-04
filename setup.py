@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 
-with open("README.org", "r") as f:
+with open("README.rst", "r") as f:
     DESCRIPTION = f.read()
 
 
