@@ -1,3 +1,5 @@
+""" Core implementation for lsp """
+
 import json
 from json import JSONEncoder
 from typing import Dict, List, Union, Type, Optional, Tuple

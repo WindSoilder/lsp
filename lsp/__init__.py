@@ -1,4 +1,6 @@
 __all__ = ["LspProtocolError"]
+
+
 from ._errors import LspProtocolError
 from ._connection import Connection, NEED_DATA
 from ._events import (

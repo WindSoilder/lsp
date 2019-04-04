@@ -1,3 +1,5 @@
+""" Define lsp connection state for client side and server side. """
+
 import textwrap
 
 from typing import Type, Dict, Union
