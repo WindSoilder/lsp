@@ -163,6 +163,7 @@ Main events we will get from next_event
 Client
 ~~~~~~
 Client side will get the following values from next_events:
+
 1. *NEED_DATA* - which indicate that we need to receive data from server.
 2. *ResponseReceived* - Client have receive response header.
 3. *DataReceived* - Client have receive resposne body.
@@ -171,6 +172,7 @@ Client side will get the following values from next_events:
 Server
 ~~~~~~
 Server side will get the following values from next_events:
+
 1. *NEED_DATA* - which indicate that we need to receive data from client.
 2. *RequestReceived* - Client have send request header,  and we receive it.
 3. *DataReceived* - Server have receive response body from client.
