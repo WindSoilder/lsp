@@ -1,5 +1,0 @@
-{
-    "python.pythonPath": "/Users/chenhongze/.local/share/virtualenvs/lsp_env/bin/python",
-    "python.linting.mypyPath": "/Users/chenhongze/.local/share/virtualenvs/lsp_env/bin/mypy",
-    "workbench.colorCustomizations": {}
-}
