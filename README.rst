@@ -2,6 +2,7 @@ LSP - Language server protocol in Sans-IO pattern
 =================================================
 
 Language Server Protocol implementation in sans-io pattern.  Which is highly inspired by `Sans-IO pattern <https://sans-io.readthedocs.io/how-to-sans-io.html>`_.  And some relatived projects:
+
 - `hyper-h2 <https://github.com/python-hyper/hyper-h2>`_
 - `h11 <https://github.com/python-hyper/h11>`_
 
